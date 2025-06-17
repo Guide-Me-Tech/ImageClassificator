@@ -63,17 +63,17 @@ async def predict_image(image: UploadFile = File(...), n_results: int = 5):
 
 if not config.use_auth:
     logger.info("No authentication")
-    @app.post("/predict")
+    @app.post("/image/classification/predict")
     async def predict(image: UploadFile = File(...), n_results: int = Query(default=5)):
         return await predict_image(image, n_results)
 else:
     logger.info("Authentication enabled")
-    @app.post("/predict")
+    @app.post("/image/classification/predict")
     async def predict(image: UploadFile = File(...), _ = Depends(check_key), n_results: int = Query(default=5)):
         return await predict_image(image, n_results)
 
 
-@app.post("/upload_classes")
+@app.post("/image/classification/upload_classes")
 def upload_classes(classes: List[str]):
     with open("categories_list_new.txt", "w") as f:
         for class_ in classes:
@@ -82,6 +82,6 @@ def upload_classes(classes: List[str]):
     classifier.load_classes("categories_list_new.txt")
     return {"message": "Classes uploaded successfully"}
 
-@app.get("/classes")
+@app.get("/image/classification/classes")
 def get_classes():
     return {"classes": classifier.classes}
