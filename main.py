@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, Depends, Header, HTTPException
+from fastapi import FastAPI, UploadFile, File, Depends, Header, HTTPException, Query
 from models.output import Output, ClassPrediction, Prediction
 from classification import ImageClassifier
 from config import logger, Config
@@ -6,7 +6,7 @@ import time
 from functools import wraps
 from uuid import uuid4
 from typing import List
-app = FastAPI()
+app = FastAPI(docs_url="/image/classification/docs")
 
 config = Config()
 
@@ -33,7 +33,7 @@ async def check_key(auth_key: str = Header(...) ):
 
 
 @timer
-async def predict_image(image: UploadFile = File(...)):
+async def predict_image(image: UploadFile = File(...), n_results: int = 5):
     try:
         logger.info(f"Processing image: {image.filename}")
         # save image to file
@@ -41,7 +41,7 @@ async def predict_image(image: UploadFile = File(...)):
         with open(filename, "wb") as f:
             f.write(image.file.read())
         # predict
-        values, indices = classifier.predict(filename)
+        values, indices = classifier.predict(filename, n_results)
         
         predictions = Prediction()
         for value, index in zip(values, indices):
@@ -64,13 +64,13 @@ async def predict_image(image: UploadFile = File(...)):
 if not config.use_auth:
     logger.info("No authentication")
     @app.post("/predict")
-    async def predict(image: UploadFile = File(...)):
-        return await predict_image(image)
+    async def predict(image: UploadFile = File(...), n_results: int = Query(default=5)):
+        return await predict_image(image, n_results)
 else:
     logger.info("Authentication enabled")
     @app.post("/predict")
-    async def predict(image: UploadFile = File(...), _ = Depends(check_key)):
-        return await predict_image(image)
+    async def predict(image: UploadFile = File(...), _ = Depends(check_key), n_results: int = Query(default=5)):
+        return await predict_image(image, n_results)
 
 
 @app.post("/upload_classes")

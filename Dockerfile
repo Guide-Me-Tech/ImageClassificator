@@ -23,7 +23,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Cache the model 
 COPY   utils/download_models.py .
-RUN MODEL_NAME=ViT-B/32 python download_models.py
+RUN MODEL_NAME=ViT-B/32 python3 download_models.py
 
 # Copy application code
 COPY . .
