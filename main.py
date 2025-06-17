@@ -6,12 +6,19 @@ import time
 from functools import wraps
 from uuid import uuid4
 from typing import List
-app = FastAPI(docs_url="/image/classification/docs")
-
+import os
+#app = FastAPI(docs_url="/image/classification/docs")
+app = FastAPI(
+    root_path="/image/classification/docs",
+    docs_url="/",  # This will make docs available at /image/classification/docs/
+    redoc_url=None,  # Or set to another if needed
+    openapi_url="/openapi.json"
+)
 config = Config()
 
 classifier = ImageClassifier()
-
+if not os.path.exists("images"):
+    os.makedirs("images")
 def timer(func):
     @wraps(func)
     async def wrapper(*args, **kwargs):
@@ -63,7 +70,7 @@ async def predict_image(image: UploadFile = File(...), n_results: int = 5):
 
 if not config.use_auth:
     logger.info("No authentication")
-    @app.post("/image/classification/predict")
+    @app.post("/predict")
     async def predict(image: UploadFile = File(...), n_results: int = Query(default=5)):
         return await predict_image(image, n_results)
 else:
@@ -73,7 +80,7 @@ else:
         return await predict_image(image, n_results)
 
 
-@app.post("/image/classification/upload_classes")
+@app.post("/upload_classes")
 def upload_classes(classes: List[str]):
     with open("categories_list_new.txt", "w") as f:
         for class_ in classes:
@@ -82,6 +89,6 @@ def upload_classes(classes: List[str]):
     classifier.load_classes("categories_list_new.txt")
     return {"message": "Classes uploaded successfully"}
 
-@app.get("/image/classification/classes")
+@app.get("/classes")
 def get_classes():
     return {"classes": classifier.classes}
