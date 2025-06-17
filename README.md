@@ -92,19 +92,20 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
-The API will be available at `http://localhost:8000` with automatic documentation at `http://localhost:8000/docs`.
+The API will be available at `http://localhost:8000` with automatic documentation at `http://localhost:8000/image/classification/docs`.
 
 ### API Endpoints
 
 #### 1. Classify Image
-**POST** `/predict`
+**POST** `/image/classification/predict`
 
 Upload an image file for classification.
 
 ```bash
-curl -X POST "http://localhost:8000/predict" \
+curl -X POST "http://localhost:8000/image/classification/predict" \
      -H "Content-Type: multipart/form-data" \
-     -F "image=@your_image.jpg"
+     -F "image=@your_image.jpg" \
+     -H "auth_key: <your_auth_key>"
 ```
 
 **Response:**
@@ -128,23 +129,24 @@ curl -X POST "http://localhost:8000/predict" \
 ```
 
 #### 2. Upload Custom Categories
-**POST** `/upload_classes`
+**POST** `/image/classification/upload_classes`
 
 Update the classification categories.
 
 ```bash
-curl -X POST "http://localhost:8000/upload_classes" \
+curl -X POST "http://localhost:8000/image/classification/upload_classes" \
      -H "Content-Type: application/json" \
-     -d '["Category 1", "Category 2", "Category 3"]'
+     -d '["Category 1", "Category 2", "Category 3"]' \
+     -H "auth_key: <your_auth_key>"
 ```
 
 #### 3. Get Current Categories
-**GET** `/classes`
+**GET** `/image/classification/classes`
 
 Retrieve the list of current classification categories.
 
 ```bash
-curl -X GET "http://localhost:8000/classes"
+curl -X GET "http://localhost:8000/image/classification/classes" -H "auth_key: <your_auth_key>"
 ```
 
 
