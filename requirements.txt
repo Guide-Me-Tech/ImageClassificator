@@ -1,0 +1,10 @@
+pandas
+fastapi[standard]
+pytorch 
+pytorch=1.7.1 
+torchvision 
+cudatoolkit=11.0
+ftfy 
+regex 
+tqdm
+git+https://github.com/openai/CLIP.git
