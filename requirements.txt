@@ -1,6 +1,5 @@
 fastapi[standard]
-pytorch
-pytorch 
+torch 
 torchvision 
 pandas
 ftfy 

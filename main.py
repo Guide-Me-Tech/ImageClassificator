@@ -1,12 +1,14 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Depends, Header, HTTPException
 from models.output import Output, ClassPrediction, Prediction
 from classification import ImageClassifier
-from config import logger
+from config import logger, Config
 import time
 from functools import wraps
 from uuid import uuid4
 from typing import List
 app = FastAPI()
+
+config = Config()
 
 classifier = ImageClassifier()
 
@@ -20,6 +22,13 @@ def timer(func):
         logger.info(f"Function {func.__name__} took {duration:.2f} seconds to execute")
         return result
     return wrapper
+
+
+
+
+async def check_key(auth_key: str = Header(...) ):
+    if auth_key != config.auth_key:
+        raise HTTPException(status_code=401, detail="Invalid authentication key")
 
 
 
@@ -52,10 +61,16 @@ async def predict_image(image: UploadFile = File(...)):
         classifier.save_usage(Prediction(), error={"error": str(e)}, image_path=filename)
         return Output(prediction=Prediction(), error={"error": str(e)})
 
-@app.post("/predict")
-async def predict(image: UploadFile = File(...)):
-    return await predict_image(image)
-
+if not config.use_auth:
+    logger.info("No authentication")
+    @app.post("/predict")
+    async def predict(image: UploadFile = File(...)):
+        return await predict_image(image)
+else:
+    logger.info("Authentication enabled")
+    @app.post("/predict")
+    async def predict(image: UploadFile = File(...), _ = Depends(check_key)):
+        return await predict_image(image)
 
 
 @app.post("/upload_classes")
