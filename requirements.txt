@@ -1,6 +1,5 @@
 fastapi[standard]
-pytorch==1.7.1 
-cudatoolkit==11.0
+pytorch
 pytorch 
 torchvision 
 pandas
