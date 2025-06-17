@@ -197,3 +197,4 @@ cache.json
 *.csv
 images/
 logs/
+categories_list_new.txt
