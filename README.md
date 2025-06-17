@@ -36,7 +36,7 @@ The service is designed for e-commerce platforms, inventory management systems, 
 
 1. **Clone the repository:**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/Guide-Me-Tech/ImageClassificator
    cd ImageProcessing/classification
    ```
 
@@ -147,25 +147,6 @@ Retrieve the list of current classification categories.
 curl -X GET "http://localhost:8000/classes"
 ```
 
-### Python SDK Usage
-
-You can also use the classifier directly in Python:
-
-```python
-from classification import ImageClassifier
-
-# Initialize the classifier
-classifier = ImageClassifier()
-
-# Classify an image
-values, indices = classifier.predict("path/to/image.jpg", top_k=5)
-
-# Get class names and confidence scores
-for value, index in zip(values, indices):
-    class_name = classifier.classes[index]
-    confidence = value.item()
-    print(f"{class_name}: {confidence:.2f}")
-```
 
 ### Supported Image Formats
 

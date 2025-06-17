@@ -72,5 +72,7 @@ def setup_logging(log_file: str) -> logging.Logger:
 
     return get_logger()
 
-
-logger = setup_logging("app.log")
+import os 
+if not os.path.exists("logs"):
+    os.makedirs("logs")
+logger = setup_logging("logs/app.log")
