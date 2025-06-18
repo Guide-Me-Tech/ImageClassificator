@@ -1,5 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, Depends, Header, HTTPException, Query
 from models.output import Output, ClassPrediction, Prediction
+from fastapi.middleware.cors import CORSMiddleware
+from models.inputs import NewClasess
 from classification import ImageClassifier
 from config import logger, Config
 import time
@@ -46,8 +48,12 @@ async def predict_image(image: UploadFile = File(...), n_results: int = 5):
         predictions = Prediction()
         for value, index in zip(values, indices):
             class_name = classifier.classes[index]
+            class_name_ru = classifier.classes_map_ru[class_name]
+            class_name_uz = classifier.classes_map_uz[class_name]
             confidence = value.item()
             predictions.classes_en.append(ClassPrediction(class_name=class_name, confidence=confidence))
+            predictions.classes_ru.append(ClassPrediction(class_name=class_name_ru, confidence=confidence))
+            predictions.classes_uz.append(ClassPrediction(class_name=class_name_uz, confidence=confidence))
             logger.debug(f"Predicted class: {class_name} with confidence: {confidence:.2f}")
 
         logger.info(f"Successfully processed image: {filename}")
@@ -74,9 +80,16 @@ else:
 
 
 @app.post("/image/classification/upload_classes")
-def upload_classes(classes: List[str]):
+def upload_classes(classes: NewClasess):
+
     with open("categories_list_new.txt", "w") as f:
-        for class_ in classes:
+        for class_ in classes.classes_en:
+            f.write(class_ + "\n")
+    with open("categories_list_new_ru.txt", "w") as f:
+        for class_ in classes.classes_ru:
+            f.write(class_ + "\n")
+    with open("categories_list_new_uz.txt", "w") as f:
+        for class_ in classes.classes_uz:
             f.write(class_ + "\n")
     
     classifier.load_classes("categories_list_new.txt")
