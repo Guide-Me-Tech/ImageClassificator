@@ -194,7 +194,8 @@ cython_debug/
 .env
 cache.json
 *.json
-*.csv
+classes/all.csv
+usage.csv
 images/
 logs/
 categories_list_new.txt

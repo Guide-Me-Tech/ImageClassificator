@@ -8,6 +8,7 @@ import time
 from functools import wraps
 from uuid import uuid4
 from typing import List
+import pandas as pd 
 app = FastAPI(docs_url="/image/classification/docs")
 
 config = Config()
@@ -48,8 +49,9 @@ async def predict_image(image: UploadFile = File(...), n_results: int = 5):
         predictions = Prediction()
         for value, index in zip(values, indices):
             class_name = classifier.classes[index]
-            class_name_ru = classifier.classes_map_ru[class_name]
-            class_name_uz = classifier.classes_map_uz[class_name]
+            class_index = classifier.name_en_to_idx[class_name]
+            class_name_ru = classifier.classes_map[class_index]["name_ru"]
+            class_name_uz = classifier.classes_map[class_index]["name_uz"]
             confidence = value.item()
             predictions.classes_en.append(ClassPrediction(class_name=class_name, confidence=confidence))
             predictions.classes_ru.append(ClassPrediction(class_name=class_name_ru, confidence=confidence))
@@ -69,32 +71,57 @@ async def predict_image(image: UploadFile = File(...), n_results: int = 5):
 
 if not config.use_auth:
     logger.info("No authentication")
-    @app.post("/image/classification/predict")
+    @app.post("/predict")
     async def predict(image: UploadFile = File(...), n_results: int = Query(default=5)):
         return await predict_image(image, n_results)
+    
+
+    @app.post("/upload_classes")
+    def upload_classes(classes: NewClasess):
+        classes = [ x.model_dump() for x in classes.classes]
+        classes = pd.DataFrame(classes)
+        all_classes = pd.read_csv("all.csv")
+        classes_map = {x["id"]: {"name_uz":  x["name_uz"], "name_ru": x["name_ru"], "name_en": x["name_en"]} for x in all_classes.to_dict(orient="records")}
+
+        for class_ in classes.classes:
+            classes_map[class_["id"]] = {"name_uz": class_["name_uz"], "name_ru": class_["name_ru"], "name_en": class_["name_en"]}
+                
+        # convert to dataframe again
+        classes_df = pd.DataFrame([[k, v["name_uz"], v["name_ru"], v["name_en"]] for k,v  in classes_map.items()])        
+        classes_df.to_csv("all.csv", index=False)
+        classifier.load_classes("all.csv")
+        return {"message": "Classes uploaded successfully"}
+
+    @app.get("/classes")
+    def get_classes():
+        return {"classes": classifier.classes_map}
 else:
     logger.info("Authentication enabled")
-    @app.post("/image/classification/predict", response_class=Output)
+    @app.post("/predict")
     async def predict(image: UploadFile = File(...), _ = Depends(check_key), n_results: int = Query(default=5)):
         return await predict_image(image, n_results)
-
-
-@app.post("/image/classification/upload_classes")
-def upload_classes(classes: NewClasess):
-
-    with open("categories_list_new.txt", "w") as f:
-        for class_ in classes.classes_en:
-            f.write(class_ + "\n")
-    with open("categories_list_new_ru.txt", "w") as f:
-        for class_ in classes.classes_ru:
-            f.write(class_ + "\n")
-    with open("categories_list_new_uz.txt", "w") as f:
-        for class_ in classes.classes_uz:
-            f.write(class_ + "\n")
     
-    classifier.load_classes("categories_list_new.txt")
-    return {"message": "Classes uploaded successfully"}
+    
 
-@app.get("/image/classification/classes")
-def get_classes():
-    return {"classes": classifier.classes}
+    @app.post("/upload_classes")
+    def upload_classes(classes: NewClasess):
+
+        # classes = [ x.model_dump() for x in classes.classes]
+        # new_classes = pd.DataFrame(classes)
+        all_classes = pd.read_csv("all.csv")
+        classes_map = {x["id"]: {"name_uz":  x["name_uz"], "name_ru": x["name_ru"], "name_en": x["name_en"]} for x in all_classes.to_dict(orient="records")}
+
+        for class_ in classes.classes:
+            classes_map[class_.id] = {"name_uz": class_.name_uz, "name_ru": class_.name_ru, "name_en": class_.name_en}
+                
+        # convert to dataframe again
+        classes_df = pd.DataFrame([[k, v["name_uz"], v["name_ru"], v["name_en"]] for k,v  in classes_map.items()])    
+        # set headers 
+        classes_df.columns = ["id", "name_uz", "name_ru", "name_en"]
+        classes_df.to_csv("all.csv", index=False)
+        classifier.load_classes("all.csv")
+        return {"message": "Classes uploaded successfully"}
+
+    @app.get("/classes")
+    def get_classes():
+        return {"classes": classifier.classes_map}
