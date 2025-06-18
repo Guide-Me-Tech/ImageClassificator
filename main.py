@@ -75,7 +75,7 @@ if not config.use_auth:
         return await predict_image(image, n_results)
 else:
     logger.info("Authentication enabled")
-    @app.post("/image/classification/predict")
+    @app.post("/image/classification/predict", response_class=Output)
     async def predict(image: UploadFile = File(...), _ = Depends(check_key), n_results: int = Query(default=5)):
         return await predict_image(image, n_results)
 
