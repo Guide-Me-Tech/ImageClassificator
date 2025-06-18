@@ -1,6 +1,14 @@
 from pydantic import BaseModel
 from typing import List
+
+
+
+class Class(BaseModel):
+    id: int
+    name_en: str
+    name_ru: str
+    name_uz: str
+
+
 class NewClasess(BaseModel):
-    classes_en: List[str]
-    classes_ru: List[str]
-    classes_uz: List[str]
+    classes: List[Class]
