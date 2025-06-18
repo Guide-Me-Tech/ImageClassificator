@@ -52,10 +52,11 @@ async def predict_image(image: UploadFile = File(...), n_results: int = 5):
             class_index = classifier.name_en_to_idx[class_name]
             class_name_ru = classifier.classes_map[class_index]["name_ru"]
             class_name_uz = classifier.classes_map[class_index]["name_uz"]
+            class_idx = classifier.name_en_to_idx[class_name]
             confidence = value.item()
-            predictions.classes_en.append(ClassPrediction(class_name=class_name, confidence=confidence))
-            predictions.classes_ru.append(ClassPrediction(class_name=class_name_ru, confidence=confidence))
-            predictions.classes_uz.append(ClassPrediction(class_name=class_name_uz, confidence=confidence))
+            predictions.classes_en.append(ClassPrediction(class_name=class_name, confidence=confidence, idx=class_idx))
+            predictions.classes_ru.append(ClassPrediction(class_name=class_name_ru, confidence=confidence, idx=class_idx))
+            predictions.classes_uz.append(ClassPrediction(class_name=class_name_uz, confidence=confidence, idx=class_idx))
             logger.debug(f"Predicted class: {class_name} with confidence: {confidence:.2f}")
 
         logger.info(f"Successfully processed image: {filename}")
