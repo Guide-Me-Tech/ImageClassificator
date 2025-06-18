@@ -24,6 +24,16 @@ class ImageClassifier():
         self.model, self.preprocess = clip.load(config.model_name, device)
         logger.info(f"Loaded CLIP model: {config.model_name}")
         self.classes = []
+        self.classes_ru = []
+        self.classes_uz = []
+        self.classes_map_ru = {}
+        self.classes_map_uz = {}
+        
+
+        
+        
+        
+        
         self.load_classes("category_list.txt")
         logger.info(f"Loaded {len(self.classes)} classes")
         last_index = 0
@@ -40,7 +50,20 @@ class ImageClassifier():
         
     def load_classes(self, classes_file: str):
         logger.debug(f"Loading classes from {classes_file}")
-        self.classes += [class_.strip() for class_ in open(classes_file, "r").readlines()]
+        self.classes += [class_.strip() for class_ in open(f"{classes_file[:-4]}.txt", "r").readlines()]
+        
+        with open(f"{classes_file[:-4]}_uz.txt") as f:
+            self.classes_uz += [line.strip() for line in f.readlines()]
+        with open(f"{classes_file[:-4]}_ru.txt") as f:
+            self.classes_ru += [line.strip() for line in f.readlines()]
+        # with open('category_list.txt') as f:
+        #     self.classes = [line.strip() for line in f.readlines()]
+        
+        for i in range(len(self.classes)):
+            self.classes_map_ru[self.classes[i]] = self.classes_ru[i]
+            self.classes_map_uz[self.classes[i]] = self.classes_uz[i]
+        # self.classes_map_ru = {class_.split(" - ")[0]: class_.split(" - ")[1] for class_ in open(f"{classes_file[:-4]}_ru.txt", "r").readlines()}
+        # self.classes_map_uz = {class_.split(" - ")[0]: class_.split(" - ")[1] for class_ in open(f"{classes_file[:-4]}_uz.txt", "r").readlines()}
         
     def open_image(self, image_path_or_url):
         if image_path_or_url.startswith("http"):

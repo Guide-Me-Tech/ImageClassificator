@@ -13,6 +13,7 @@ class ClassPrediction(BaseModel):
 class Prediction(BaseModel):
     classes_en: List[ClassPrediction] = []
     classes_uz: List[ClassPrediction] = []
+    classes_ru: List[ClassPrediction] = []
 
 class Output(BaseModel):
     prediction: Prediction
