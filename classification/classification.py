@@ -1,37 +1,34 @@
 
 # Download the dataset
 import os
-import os
-import clip
-import torch
-import requests
+from qdrant_client.models import Filter, FieldCondition, MatchAny, SearchParams
+from qdrant_client import QdrantClient
 from PIL import Image
+import open_clip
+import torch
+import clip
+import requests
 from io import BytesIO
 from config import logger, Config
 import pandas as pd 
-import os
 from datetime import datetime
-from models.output import Prediction
-config = Config()
+from models.output import Prediction, Similarity
 
+config = Config()
 
 
 class ImageClassifier():
     def __init__(self):
         
         device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.client = QdrantClient(host="localhost", port=6333)
         logger.info(f"Using device: {device}")
         self.model, self.preprocess = clip.load(config.model_name, device)
         logger.info(f"Loaded CLIP model: {config.model_name}")
         self.classes = []
         self.classes_map = {}
         self.name_en_to_idx = {}
-        
 
-        
-        
-        
-        
         self.load_classes("all.csv")
         logger.info(f"Loaded {len(self.classes)} classes")
         last_index = 0
@@ -102,12 +99,54 @@ class ImageClassifier():
         logger.info(f"Prediction complete, found top {top_k} matches")
         return values, indices
 
-    
-    def save_usage(self, prediction: Prediction, error: dict, image_path: str):
+    def get_top_categories(self, image_path_or_url, top_k=3):
+        values, indices = self.predict(image_path_or_url, top_k=top_k)
+        top_names = [self.classes[i] for i in indices.tolist()]
+        return top_names
+
+    def get_query_vector(self, image_path_or_url):
+        query_image = self.preprocess(Image.open(image_path_or_url).convert("RGB")).unsqueeze(0).to(self.device)
+        with torch.no_grad():
+            query_vector = self.model.encode_image(query_image).squeeze(0)
+            query_vector = query_vector / query_vector.norm()
+        return query_vector
+
+    def qdrant_search(self, image_path_or_url):
+        top_categs = self.get_top_categories(image_path_or_url)
+        logger.info(f"Top categories from classifier: {top_categs}")
+        query_vector = self.get_query_vector(image_path_or_url)
+        
+        category_filter = Filter(
+            must=[
+                FieldCondition(
+                    key="categories",
+                    match=MatchAny(any=top_categs)
+                )
+            ]
+        )
+
+        results = self.client.search(
+            collection_name="smartbazar_products",
+            query_vector=query_vector.tolist(),
+            query_filter=category_filter,
+            search_params=SearchParams(hnsw_ef=128),
+            limit=10
+        )
+        logger.info(f"Performed QDrant Similiarity Search from {top_categs} | Retrieved results")
+
+        return [
+            {
+                "score": hit.score,
+                "product_name": hit.payload.get("product_name")
+            }
+            for hit in results
+        ]   
+
+    def save_usage(self, prediction: Prediction, similars: Similarity, error: dict, image_path: str):
         
         logger.debug(f"Saving usage data for {image_path}")
         # append to usage.csv
-        df = pd.DataFrame({"time": datetime.now(), "prediction": prediction.model_dump_json(), "image_path": image_path, "error": error}, index=[self.last_index])
+        df = pd.DataFrame({"time": datetime.now(), "prediction": prediction.model_dump_json(), "similars": similars.model_dump_json(), "image_path": image_path, "error": error}, index=[self.last_index])
         df.to_csv("usage.csv", mode="a", header=False, index=False)
         self.last_index += 1
         logger.debug("Usage data saved successfully")

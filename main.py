@@ -1,8 +1,9 @@
 from fastapi import FastAPI, UploadFile, File, Depends, Header, HTTPException, Query
-from models.output import Output, ClassPrediction, Prediction
+from models.output import Output, ClassPrediction, Prediction, ClassSimilarity, Similarity
 from fastapi.middleware.cors import CORSMiddleware
 from models.inputs import NewClasess
 from classification import ImageClassifier
+from qdrant_client import QdrantClient
 from config import logger, Config
 import time
 from functools import wraps
@@ -12,7 +13,7 @@ import pandas as pd
 app = FastAPI(docs_url="/image/classification/docs")
 
 config = Config()
-
+client = QdrantClient(host="localhost", port=6333)
 classifier = ImageClassifier()
 
 def timer(func):
@@ -45,7 +46,6 @@ async def predict_image(image: UploadFile = File(...), n_results: int = 5):
             f.write(image.file.read())
         # predict
         values, indices = classifier.predict(filename, n_results)
-        
         predictions = Prediction()
         for value, index in zip(values, indices):
             class_name = classifier.classes[index]
@@ -57,18 +57,27 @@ async def predict_image(image: UploadFile = File(...), n_results: int = 5):
             predictions.classes_en.append(ClassPrediction(class_name=class_name, confidence=confidence, idx=class_idx))
             predictions.classes_ru.append(ClassPrediction(class_name=class_name_ru, confidence=confidence, idx=class_idx))
             predictions.classes_uz.append(ClassPrediction(class_name=class_name_uz, confidence=confidence, idx=class_idx))
+
             logger.debug(f"Predicted class: {class_name} with confidence: {confidence:.2f}")
 
         logger.info(f"Successfully processed image: {filename}")
         
+        # QDrant
+        similar_products = classifier.qdrant_search(filename)
+        similars = Similarity()
+        for prod in similar_products:
+            product_name = similar_products['product_name']
+            score = similar_products['score']
+            similars.similar_products.append(ClassSimilarity(sim_score=score, product_name=product_name))
+            logger.debug(f"Similar product: {product_name} with confidence: {score:.2f}")
         # save to usage file
-        
-        classifier.save_usage(predictions, error={}, image_path=filename)
-        return Output(prediction=predictions, error={})
+        classifier.save_usage(predictions, similars, error={}, image_path=filename)
+        return Output(prediction=predictions, similarity=similars, error={})
+    
     except Exception as e:
         logger.error(f"Error processing image {image.filename}: {str(e)}")
         classifier.save_usage(Prediction(), error={"error": str(e)}, image_path=filename)
-        return Output(prediction=Prediction(), error={"error": str(e)})
+        return Output(prediction=Prediction(), similarity=Similarity(), error={"error": str(e)})
 
 if not config.use_auth:
     logger.info("No authentication")
