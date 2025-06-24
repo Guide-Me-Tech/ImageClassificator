@@ -4,9 +4,8 @@ import os
 from qdrant_client.models import Filter, FieldCondition, MatchAny, SearchParams
 from qdrant_client import QdrantClient
 from PIL import Image
-import open_clip
 import torch
-import clip
+import open_clip
 import requests
 from io import BytesIO
 from config import logger, Config
@@ -23,7 +22,11 @@ class ImageClassifier():
         device = "cuda" if torch.cuda.is_available() else "cpu"
         self.client = QdrantClient(host="localhost", port=6333)
         logger.info(f"Using device: {device}")
-        self.model, self.preprocess = clip.load(config.model_name, device)
+        self.model, _, self.preprocess = open_clip.create_model_and_transforms(
+            config.model_name or "ViT-B-32-quickgelu", pretrained="openai"
+        )
+        self.tokenizer = open_clip.get_tokenizer(config.model_name or "ViT-B-32-quickgelu")
+        self.model = self.model.to(device)
         logger.info(f"Loaded CLIP model: {config.model_name}")
         self.classes = []
         self.classes_map = {}
@@ -69,7 +72,7 @@ class ImageClassifier():
     def prepare_inputs(self, image, classes):
         logger.debug("Preparing inputs for model")
         image_input = self.preprocess(image).unsqueeze(0).to(self.device)
-        text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}") for c in classes]).to(self.device)
+        text_inputs = self.tokenizer([f"a photo of a {c}" for c in classes]).to(self.device)
         return image_input, text_inputs
 
 
@@ -107,12 +110,22 @@ class ImageClassifier():
     def get_query_vector(self, image_path_or_url):
         query_image = self.preprocess(Image.open(image_path_or_url).convert("RGB")).unsqueeze(0).to(self.device)
         with torch.no_grad():
-            query_vector = self.model.encode_image(query_image).squeeze(0)
-            query_vector = query_vector / query_vector.norm()
+            query_vector = self.model.encode_image(query_image)
+            if query_vector.shape[0] == 1:
+                query_vector = query_vector.squeeze(0)
+            else:
+                logger.error(f"Unexpected tensor shape: {query_vector.shape}")
+                exit(1)
+            norm = query_vector.norm()
+            if norm > 0:
+                query_vector = query_vector / norm
+            else:
+                logger.error("Error: Query vector has zero norm.")
+                exit(1)
         return query_vector
 
-    def qdrant_search(self, image_path_or_url):
-        top_categs = self.get_top_categories(image_path_or_url)
+    def qdrant_search(self, image_path_or_url, top_k_categs=3):
+        top_categs = self.get_top_categories(image_path_or_url, top_k_categs)
         logger.info(f"Top categories from classifier: {top_categs}")
         query_vector = self.get_query_vector(image_path_or_url)
         
@@ -125,9 +138,9 @@ class ImageClassifier():
             ]
         )
 
-        results = self.client.search(
+        results = self.client.query_points(
             collection_name="smartbazar_products",
-            query_vector=query_vector.tolist(),
+            query=query_vector.tolist(),
             query_filter=category_filter,
             search_params=SearchParams(hnsw_ef=128),
             limit=10
@@ -139,7 +152,7 @@ class ImageClassifier():
                 "score": hit.score,
                 "product_name": hit.payload.get("product_name")
             }
-            for hit in results
+            for hit in results.points
         ]   
 
     def save_usage(self, prediction: Prediction, similars: Similarity, error: dict, image_path: str):

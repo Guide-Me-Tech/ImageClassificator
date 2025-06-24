@@ -10,6 +10,8 @@ from functools import wraps
 from uuid import uuid4
 from typing import List
 import pandas as pd 
+import os
+
 app = FastAPI(docs_url="/image/classification/docs")
 
 config = Config()
@@ -41,9 +43,13 @@ async def predict_image(image: UploadFile = File(...), n_results: int = 5):
     try:
         logger.info(f"Processing image: {image.filename}")
         # save image to file
+        
+        os.makedirs("images", exist_ok=True)
         filename = f"images/{uuid4()}_{image.filename}"
+
         with open(filename, "wb") as f:
-            f.write(image.file.read())
+            #f.write(image.file.read())
+            f.write(await image.read())  # Use await for reading UploadFile content
         # predict
         values, indices = classifier.predict(filename, n_results)
         predictions = Prediction()
@@ -63,20 +69,21 @@ async def predict_image(image: UploadFile = File(...), n_results: int = 5):
         logger.info(f"Successfully processed image: {filename}")
         
         # QDrant
-        similar_products = classifier.qdrant_search(filename)
+        similar_prods = classifier.qdrant_search(filename)
+        print(similar_prods)
         similars = Similarity()
-        for prod in similar_products:
-            product_name = similar_products['product_name']
-            score = similar_products['score']
+        for prod in similar_prods:
+            product_name = prod['product_name']
+            score = prod['score']
             similars.similar_products.append(ClassSimilarity(sim_score=score, product_name=product_name))
-            logger.debug(f"Similar product: {product_name} with confidence: {score:.2f}")
+            logger.debug(f"Similar product: {product_name} with similarity score: {score:.2f}")
         # save to usage file
         classifier.save_usage(predictions, similars, error={}, image_path=filename)
         return Output(prediction=predictions, similarity=similars, error={})
     
     except Exception as e:
         logger.error(f"Error processing image {image.filename}: {str(e)}")
-        classifier.save_usage(Prediction(), error={"error": str(e)}, image_path=filename)
+        classifier.save_usage(Prediction(), Similarity(), error={"error": str(e)}, image_path=filename)
         return Output(prediction=Prediction(), similarity=Similarity(), error={"error": str(e)})
 
 if not config.use_auth:

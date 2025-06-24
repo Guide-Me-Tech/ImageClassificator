@@ -1,7 +1,7 @@
 id,name_uz,name_ru,name_en
 5371,Quloqchinlar va audio texnikalar,Наушники и аудиооборудование,Headphones and audio equipment
 5400,Quloqchinlar,Наушники,Headphones
-5243,Elektronikaa,Электроника,Electronics
+5243,Elektronika,Электроника,Electronics
 5499,Smartfonlar,Смартфоны,Smartphones
 6396,Aksessuarlar,Аксессуары,Accessories
 7378,Xoʻjalik buyumlari,Предметы домашнего обихода,Household items
@@ -54,7 +54,7 @@ id,name_uz,name_ru,name_en
 6696,Lablar,Губы,Lips
 6669,Goʻzallik va parvarish,Красота и уход,Beauty and care
 8018,Avtomobil uchun moylar va kimyoviy moddalar,Автомобильные масла и химикаты,Automotive oils and chemicals
-7823,Avtotovarlar.,Автомобильная продукция.,Automotive products.
+7823,Avtotovarlar,Автомобильная продукция,Automotive products
 6462,Zargarlik buyumlari,Ювелирные изделия,Jewelry
 10113,corolla 2024 compitition,конкурс королла 2024,corolla 2024 competition
 5680,Sovutgichlar va muzlatgichlar,Холодильники и морозильники,Refrigerators and freezers
@@ -427,6 +427,7 @@ id,name_uz,name_ru,name_en
 8703,Togʻ changʻilari,горные лыжи,Alpine skis
 8697,Tog' chang'i niqoblar va ko'zoynaklar,Лыжные маски и очки,Ski masks and goggles
 8604,Sport turlari,Спорт,Sports
+8765,Sport va hordiq,Спорт и отдых,Sports and leisure
 8638,Sport gimnastikasi,Художественная гимнастика,Artistic gymnastics
 8636,Sport atributkalari va aksessuarlar,Спортивное оборудование и аксессуары,Sports equipment and accessories
 8641,Tennis va badminton,Теннис и бадминтон,Tennis and badminton
