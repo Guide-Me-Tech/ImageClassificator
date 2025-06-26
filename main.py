@@ -9,7 +9,19 @@ from functools import wraps
 from uuid import uuid4
 from typing import List
 import pandas as pd 
-app = FastAPI(docs_url="/image/classification/docs")
+app = FastAPI(
+    root_path="/image/classification",
+    title="Image Classification API",
+    description="API for image classification",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
+    servers=[{"url": "https://smarty-test.smartbank.uz/image/classification", "description": "Production"}, {"url": "http://localhost:8000/image/classification", "description": "Development"}],
+    tags=[{"name": "image-classification", "description": "Image Classification API"}],
+    openapi_tags=[{"name": "image-classification", "description": "Image Classification API"}],
+    openapi_extra={"x-logo": {"url": "https://fastapi.tiangolo.com/img/logo-margin/logo-teal.png"}},
+)
 
 config = Config()
 
@@ -57,7 +69,7 @@ async def predict_image(image: UploadFile = File(...), n_results: int = 5):
             predictions.classes_en.append(ClassPrediction(class_name=class_name, confidence=confidence, idx=class_idx))
             predictions.classes_ru.append(ClassPrediction(class_name=class_name_ru, confidence=confidence, idx=class_idx))
             predictions.classes_uz.append(ClassPrediction(class_name=class_name_uz, confidence=confidence, idx=class_idx))
-            logger.debug(f"Predicted class: {class_name} with confidence: {confidence:.2f}")
+            logger.info(f"Predicted class: {class_name} with confidence: {confidence:.2f}", idx=class_idx)
 
         logger.info(f"Successfully processed image: {filename}")
         
