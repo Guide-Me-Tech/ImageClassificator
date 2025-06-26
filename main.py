@@ -10,7 +10,7 @@ from functools import wraps
 from uuid import uuid4
 from typing import List
 import pandas as pd 
-<<<<<<< hotfix/some
+import os
 app = FastAPI(
     root_path="/image/classification",
     title="Image Classification API",
@@ -24,11 +24,7 @@ app = FastAPI(
     openapi_tags=[{"name": "image-classification", "description": "Image Classification API"}],
     openapi_extra={"x-logo": {"url": "https://fastapi.tiangolo.com/img/logo-margin/logo-teal.png"}},
 )
-=======
-import os
 
-app = FastAPI(docs_url="/image/classification/docs")
->>>>>>> main
 
 config = Config()
 client = QdrantClient(host="localhost", port=6333)
@@ -79,12 +75,7 @@ async def predict_image(image: UploadFile = File(...), n_results: int = 5):
             predictions.classes_en.append(ClassPrediction(class_name=class_name, confidence=confidence, idx=class_idx))
             predictions.classes_ru.append(ClassPrediction(class_name=class_name_ru, confidence=confidence, idx=class_idx))
             predictions.classes_uz.append(ClassPrediction(class_name=class_name_uz, confidence=confidence, idx=class_idx))
-<<<<<<< hotfix/some
             logger.info(f"Predicted class: {class_name} with confidence: {confidence:.2f}", idx=class_idx)
-=======
-
-            logger.debug(f"Predicted class: {class_name} with confidence: {confidence:.2f}")
->>>>>>> main
 
         logger.info(f"Successfully processed image: {filename}")
         
