@@ -150,7 +150,8 @@ class ImageClassifier():
         return [
             {
                 "score": hit.score,
-                "product_name": hit.payload.get("product_name")
+                "product_name": hit.payload.get("product_name"),
+                "product_id": hit.payload.get("product_id")
             }
             for hit in results.points
         ]   
