@@ -199,3 +199,4 @@ usage.csv
 images/
 logs/
 categories_list_new.txt
+deployments/qdrant_data/

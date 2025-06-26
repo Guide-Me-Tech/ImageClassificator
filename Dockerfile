@@ -23,17 +23,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Cache the model 
 COPY   utils/download_models.py .
-RUN MODEL_NAME=ViT-B/32 python3 download_models.py
+RUN MODEL_NAME=ViT-B/32 MODEL_NAME_OPEN_CLIP=ViT-B-32-quickgelu python3 download_models.py
 
 # Copy application code
 COPY . .
-
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
-
-# Expose port
-EXPOSE 8000
-RUN pip install requests structlog logfire
-
 # Run the application
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

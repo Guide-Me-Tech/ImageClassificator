@@ -9,6 +9,7 @@ class ClassPrediction(BaseModel):
     category_name: str
     confidence: float
     category_id: int
+    idx: int
 
 class ClassSimilarity(BaseModel):
     sim_score: float

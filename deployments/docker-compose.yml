@@ -6,11 +6,13 @@ services:
       context: ..
       dockerfile: Dockerfile
     ports:
-      - "10010:8000"
+      - "12000:8000"
     volumes:
       - ..:/app
     environment:
       - PYTHONUNBUFFERED=1
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
     restart: unless-stopped
     deploy:
       resources:
@@ -19,3 +21,10 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [ gpu ]
+    networks:
+      - images 
+
+
+networks:
+  images:
+    external: true

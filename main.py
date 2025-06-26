@@ -11,8 +11,19 @@ from uuid import uuid4
 from typing import List
 import pandas as pd 
 import os
-
-app = FastAPI(docs_url="/image/classification/docs")
+app = FastAPI(
+    root_path="/image/classification",
+    title="Image Classification API",
+    description="API for image classification",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
+    servers=[{"url": "https://smarty-test.smartbank.uz/image/classification", "description": "Production"}, {"url": "http://localhost:8000/image/classification", "description": "Development"}],
+    tags=[{"name": "image-classification", "description": "Image Classification API"}],
+    openapi_tags=[{"name": "image-classification", "description": "Image Classification API"}],
+    openapi_extra={"x-logo": {"url": "https://fastapi.tiangolo.com/img/logo-margin/logo-teal.png"}},
+)
 
 config = Config()
 client = QdrantClient(host="localhost", port=6333)
