@@ -1,14 +1,16 @@
 from fastapi import FastAPI, UploadFile, File, Depends, Header, HTTPException, Query
-from models.output import Output, ClassPrediction, Prediction
+from models.output import Output, ClassPrediction, Prediction, ClassSimilarity, Similarity
 from fastapi.middleware.cors import CORSMiddleware
 from models.inputs import NewClasess
 from classification import ImageClassifier
+from qdrant_client import QdrantClient
 from config import logger, Config
 import time
 from functools import wraps
 from uuid import uuid4
 from typing import List
 import pandas as pd 
+<<<<<<< hotfix/some
 app = FastAPI(
     root_path="/image/classification",
     title="Image Classification API",
@@ -22,9 +24,14 @@ app = FastAPI(
     openapi_tags=[{"name": "image-classification", "description": "Image Classification API"}],
     openapi_extra={"x-logo": {"url": "https://fastapi.tiangolo.com/img/logo-margin/logo-teal.png"}},
 )
+=======
+import os
+
+app = FastAPI(docs_url="/image/classification/docs")
+>>>>>>> main
 
 config = Config()
-
+client = QdrantClient(host="localhost", port=6333)
 classifier = ImageClassifier()
 
 def timer(func):
@@ -52,12 +59,15 @@ async def predict_image(image: UploadFile = File(...), n_results: int = 5):
     try:
         logger.info(f"Processing image: {image.filename}")
         # save image to file
+        
+        os.makedirs("images", exist_ok=True)
         filename = f"images/{uuid4()}_{image.filename}"
+
         with open(filename, "wb") as f:
-            f.write(image.file.read())
+            #f.write(image.file.read())
+            f.write(await image.read())  # Use await for reading UploadFile content
         # predict
         values, indices = classifier.predict(filename, n_results)
-        
         predictions = Prediction()
         for value, index in zip(values, indices):
             class_name = classifier.classes[index]
@@ -69,18 +79,32 @@ async def predict_image(image: UploadFile = File(...), n_results: int = 5):
             predictions.classes_en.append(ClassPrediction(class_name=class_name, confidence=confidence, idx=class_idx))
             predictions.classes_ru.append(ClassPrediction(class_name=class_name_ru, confidence=confidence, idx=class_idx))
             predictions.classes_uz.append(ClassPrediction(class_name=class_name_uz, confidence=confidence, idx=class_idx))
+<<<<<<< hotfix/some
             logger.info(f"Predicted class: {class_name} with confidence: {confidence:.2f}", idx=class_idx)
+=======
+
+            logger.debug(f"Predicted class: {class_name} with confidence: {confidence:.2f}")
+>>>>>>> main
 
         logger.info(f"Successfully processed image: {filename}")
         
+        # QDrant
+        similar_prods = classifier.qdrant_search(filename)
+        print(similar_prods)
+        similars = Similarity()
+        for prod in similar_prods:
+            product_name = prod['product_name']
+            score = prod['score']
+            similars.similar_products.append(ClassSimilarity(sim_score=score, product_name=product_name))
+            logger.debug(f"Similar product: {product_name} with similarity score: {score:.2f}")
         # save to usage file
-        
-        classifier.save_usage(predictions, error={}, image_path=filename)
-        return Output(prediction=predictions, error={})
+        classifier.save_usage(predictions, similars, error={}, image_path=filename)
+        return Output(prediction=predictions, similarity=similars, error={})
+    
     except Exception as e:
         logger.error(f"Error processing image {image.filename}: {str(e)}")
-        classifier.save_usage(Prediction(), error={"error": str(e)}, image_path=filename)
-        return Output(prediction=Prediction(), error={"error": str(e)})
+        classifier.save_usage(Prediction(), Similarity(), error={"error": str(e)}, image_path=filename)
+        return Output(prediction=Prediction(), similarity=Similarity(), error={"error": str(e)})
 
 if not config.use_auth:
     logger.info("No authentication")

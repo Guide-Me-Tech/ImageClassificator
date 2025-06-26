@@ -9,3 +9,6 @@ git+https://github.com/openai/CLIP.git
 structlog 
 logfire
 requests
+open-clip-torch
+qdrant-client
+pydantic
