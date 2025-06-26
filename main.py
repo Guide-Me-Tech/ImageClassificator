@@ -25,7 +25,6 @@ app = FastAPI(
     openapi_extra={"x-logo": {"url": "https://fastapi.tiangolo.com/img/logo-margin/logo-teal.png"}},
 )
 
-
 config = Config()
 client = QdrantClient(host="localhost", port=6333)
 classifier = ImageClassifier()
@@ -72,10 +71,11 @@ async def predict_image(image: UploadFile = File(...), n_results: int = 5):
             class_name_uz = classifier.classes_map[class_index]["name_uz"]
             class_idx = classifier.name_en_to_idx[class_name]
             confidence = value.item()
-            predictions.classes_en.append(ClassPrediction(class_name=class_name, confidence=confidence, idx=class_idx))
-            predictions.classes_ru.append(ClassPrediction(class_name=class_name_ru, confidence=confidence, idx=class_idx))
-            predictions.classes_uz.append(ClassPrediction(class_name=class_name_uz, confidence=confidence, idx=class_idx))
-            logger.info(f"Predicted class: {class_name} with confidence: {confidence:.2f}", idx=class_idx)
+            predictions.classes_en.append(ClassPrediction(category_name=class_name, confidence=confidence, category_id=class_idx))
+            predictions.classes_ru.append(ClassPrediction(category_name=class_name_ru, confidence=confidence, category_id=class_idx))
+            predictions.classes_uz.append(ClassPrediction(category_name=class_name_uz, confidence=confidence, category_id=class_idx))
+
+            logger.debug(f"Predicted class: {class_name} with confidence: {confidence:.2f}")
 
         logger.info(f"Successfully processed image: {filename}")
         
@@ -86,7 +86,8 @@ async def predict_image(image: UploadFile = File(...), n_results: int = 5):
         for prod in similar_prods:
             product_name = prod['product_name']
             score = prod['score']
-            similars.similar_products.append(ClassSimilarity(sim_score=score, product_name=product_name))
+            product_id = prod['product_id']
+            similars.similar_products.append(ClassSimilarity(sim_score=score, product_name=product_name, product_id=product_id))
             logger.debug(f"Similar product: {product_name} with similarity score: {score:.2f}")
         # save to usage file
         classifier.save_usage(predictions, similars, error={}, image_path=filename)

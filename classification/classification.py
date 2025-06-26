@@ -1,6 +1,6 @@
 # Download the dataset
 import os
-from qdrant_client.models import SearchParams
+from qdrant_client.models import Filter, FieldCondition, MatchAny, SearchParams
 from qdrant_client import QdrantClient
 from PIL import Image
 import torch
@@ -8,7 +8,7 @@ import open_clip
 import requests
 from io import BytesIO
 from config import logger, Config
-import pandas as pd
+import pandas as pd 
 from datetime import datetime
 from models.output import Prediction, Similarity
 
@@ -86,9 +86,7 @@ class ImageClassifier:
     def prepare_inputs(self, image, classes):
         logger.debug("Preparing inputs for model")
         image_input = self.preprocess(image).unsqueeze(0).to(self.device)
-        text_inputs = self.tokenizer([f"a photo of a {c}" for c in classes]).to(
-            self.device
-        )
+        text_inputs = self.tokenizer([f"a photo of a {c}" for c in classes]).to(self.device)
         return image_input, text_inputs
 
     # Calculate features
@@ -157,13 +155,11 @@ class ImageClassifier:
         results = self.client.query_points(
             collection_name="smartbazar_products",
             query=query_vector.tolist(),
-            # query_filter=category_filter,
+            #query_filter=category_filter,
             search_params=SearchParams(hnsw_ef=128),
-            limit=10,
+            limit=10
         )
-        logger.info(
-            f"Performed QDrant Similiarity Search from {top_categs} | Retrieved results"
-        )
+        logger.info(f"Performed QDrant Similiarity Search from {top_categs} | Retrieved results")
 
         return [
             {

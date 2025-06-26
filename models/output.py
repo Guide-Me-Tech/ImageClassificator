@@ -6,13 +6,15 @@ from typing import List, Dict
 
 
 class ClassPrediction(BaseModel):
-    class_name: str
+    category_name: str
     confidence: float
+    category_id: int
     idx: int
 
 class ClassSimilarity(BaseModel):
     sim_score: float
     product_name: str
+    product_id: int
 
 class Prediction(BaseModel):
     classes_en: List[ClassPrediction] = []
