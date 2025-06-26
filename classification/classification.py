@@ -141,7 +141,7 @@ class ImageClassifier():
         results = self.client.query_points(
             collection_name="smartbazar_products",
             query=query_vector.tolist(),
-            query_filter=category_filter,
+            #query_filter=category_filter,
             search_params=SearchParams(hnsw_ef=128),
             limit=10
         )

@@ -8,6 +8,7 @@ from typing import List, Dict
 class ClassPrediction(BaseModel):
     class_name: str
     confidence: float
+    idx: int
 
 class ClassSimilarity(BaseModel):
     sim_score: float
